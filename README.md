@@ -22,6 +22,7 @@ A Clarity-based carbon credit platform where individuals and organizations can:
 - **Mint Credits**: Create NFT-based carbon credits from approved projects
 - **Verification**: Only registered auditors can verify carbon credits
 - **Marketplace**: Trade verified credits with transparent pricing
+- **Retirement System**: Permanently retire credits to claim environmental benefits
 
 ### 👨‍🔬 Auditor System
 - **Registration**: Contract owner registers trusted auditors
@@ -40,6 +41,7 @@ A Clarity-based carbon credit platform where individuals and organizations can:
 1. **Browse marketplace**: Check available verified credits
 2. **Purchase credits**: `(buy-carbon-credit credit-id)`
 3. **Own the NFT**: Carbon credit transferred to your wallet
+4. **Retire credits**: `(retire-carbon-credit credit-id "Corporate carbon neutrality")`
 
 ### For Community Members
 1. **Vote on projects**: `(vote-on-project project-id true)`
@@ -61,6 +63,7 @@ A Clarity-based carbon credit platform where individuals and organizations can:
 - `release-escrow` - Release project funds
 - `list-credit-for-sale` - List credit on marketplace
 - `buy-carbon-credit` - Purchase carbon credit
+- `retire-carbon-credit` - Permanently retire credit for environmental benefit
 
 ### Read-Only Functions
 - `get-project` - Get project details
@@ -69,6 +72,9 @@ A Clarity-based carbon credit platform where individuals and organizations can:
 - `is-auditor` - Verify auditor status
 - `get-marketplace-listing` - Check listing details
 - `get-escrow` - View escrow information
+- `get-retirement-details` - Get retirement information
+- `is-credit-retired` - Check if credit is retired
+- `get-retirement-status` - Get retirement status
 
 ## 💰 Economic Model
 - **Project Escrow**: 1 STX per project (released on completion)
@@ -80,6 +86,7 @@ A Clarity-based carbon credit platform where individuals and organizations can:
 - **Verification Required**: Only verified credits can be sold
 - **DAO Governance**: Community approval for all projects
 - **Escrow Protection**: Funds released only after verification
+- **Retirement Prevention**: Retired credits cannot be traded or re-sold
 
 ## 🏃‍♂️ Getting Started
 

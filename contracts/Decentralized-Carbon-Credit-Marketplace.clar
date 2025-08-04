@@ -8,9 +8,11 @@
 (define-constant ERR_ALREADY_EXISTS (err u104))
 (define-constant ERR_INSUFFICIENT_FUNDS (err u105))
 (define-constant ERR_INVALID_PRICE (err u106))
+(define-constant ERR_ALREADY_RETIRED (err u107))
 
 (define-data-var credit-id-nonce uint u0)
 (define-data-var project-id-nonce uint u0)
+(define-data-var retirement-id-nonce uint u0)
 
 (define-map projects
   { project-id: uint }
@@ -62,6 +64,26 @@
 (define-map marketplace-listings
   { credit-id: uint }
   { seller: principal, price: uint, active: bool }
+)
+
+(define-map retired-credits
+  { retirement-id: uint }
+  {
+    credit-id: uint,
+    original-owner: principal,
+    retired-by: principal,
+    carbon-amount: uint,
+    retirement-reason: (string-ascii 100),
+    retired-at: uint
+  }
+)
+
+(define-map credit-retirement-status
+  { credit-id: uint }
+  { 
+    retired: bool,
+    retirement-id: (optional uint)
+  }
 )
 
 (define-public (register-auditor (auditor principal))
@@ -176,6 +198,10 @@
           for-sale: false
         }
       )
+      (map-set credit-retirement-status
+        { credit-id: credit-id }
+        { retired: false, retirement-id: none }
+      )
       (ok credit-id)
     )
   )
@@ -218,10 +244,12 @@
 
 (define-public (list-credit-for-sale (credit-id uint) (price uint))
   (let
-    ((credit (unwrap! (map-get? carbon-credits { credit-id: credit-id }) ERR_NOT_FOUND)))
+    ((credit (unwrap! (map-get? carbon-credits { credit-id: credit-id }) ERR_NOT_FOUND))
+     (retirement-status (unwrap! (map-get? credit-retirement-status { credit-id: credit-id }) ERR_NOT_FOUND)))
     (begin
       (asserts! (is-eq tx-sender (unwrap! (nft-get-owner? carbon-credit credit-id) ERR_NOT_FOUND)) ERR_NOT_AUTHORIZED)
       (asserts! (get verified credit) ERR_NOT_VERIFIED)
+      (asserts! (not (get retired retirement-status)) ERR_ALREADY_RETIRED)
       (asserts! (> price u0) ERR_INVALID_PRICE)
       (map-set carbon-credits
         { credit-id: credit-id }
@@ -240,12 +268,14 @@
   (let
     ((credit (unwrap! (map-get? carbon-credits { credit-id: credit-id }) ERR_NOT_FOUND))
      (listing (unwrap! (map-get? marketplace-listings { credit-id: credit-id }) ERR_NOT_FOUND))
+     (retirement-status (unwrap! (map-get? credit-retirement-status { credit-id: credit-id }) ERR_NOT_FOUND))
      (seller (get seller listing))
      (price (get price listing)))
     (begin
       (asserts! (get for-sale credit) ERR_NOT_FOUND)
       (asserts! (get active listing) ERR_NOT_FOUND)
       (asserts! (get verified credit) ERR_NOT_VERIFIED)
+      (asserts! (not (get retired retirement-status)) ERR_ALREADY_RETIRED)
       (try! (stx-transfer? price tx-sender seller))
       (try! (nft-transfer? carbon-credit credit-id seller tx-sender))
       (map-set carbon-credits
@@ -257,6 +287,43 @@
         (merge listing { active: false })
       )
       (ok true)
+    )
+  )
+)
+
+(define-public (retire-carbon-credit (credit-id uint) (retirement-reason (string-ascii 100)))
+  (let
+    ((credit (unwrap! (map-get? carbon-credits { credit-id: credit-id }) ERR_NOT_FOUND))
+     (retirement-status (unwrap! (map-get? credit-retirement-status { credit-id: credit-id }) ERR_NOT_FOUND))
+     (owner (unwrap! (nft-get-owner? carbon-credit credit-id) ERR_NOT_FOUND))
+     (retirement-id (+ (var-get retirement-id-nonce) u1)))
+    (begin
+      (asserts! (is-eq tx-sender owner) ERR_NOT_AUTHORIZED)
+      (asserts! (get verified credit) ERR_NOT_VERIFIED)
+      (asserts! (not (get retired retirement-status)) ERR_ALREADY_RETIRED)
+      (var-set retirement-id-nonce retirement-id)
+      (try! (nft-burn? carbon-credit credit-id owner))
+      (map-set retired-credits
+        { retirement-id: retirement-id }
+        {
+          credit-id: credit-id,
+          original-owner: (get creator credit),
+          retired-by: tx-sender,
+          carbon-amount: (get carbon-amount credit),
+          retirement-reason: retirement-reason,
+          retired-at: stacks-block-height
+        }
+      )
+      (map-set credit-retirement-status
+        { credit-id: credit-id }
+        { retired: true, retirement-id: (some retirement-id) }
+      )
+      (map-set carbon-credits
+        { credit-id: credit-id }
+        (merge credit { for-sale: false })
+      )
+      (map-delete marketplace-listings { credit-id: credit-id })
+      (ok retirement-id)
     )
   )
 )
@@ -283,4 +350,16 @@
 
 (define-read-only (get-escrow (project-id uint))
   (map-get? escrow-funds { project-id: project-id })
+)
+
+(define-read-only (get-retirement-details (retirement-id uint))
+  (map-get? retired-credits { retirement-id: retirement-id })
+)
+
+(define-read-only (is-credit-retired (credit-id uint))
+  (default-to false (get retired (map-get? credit-retirement-status { credit-id: credit-id })))
+)
+
+(define-read-only (get-retirement-status (credit-id uint))
+  (map-get? credit-retirement-status { credit-id: credit-id })
 )
