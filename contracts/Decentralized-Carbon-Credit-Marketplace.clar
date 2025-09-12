@@ -363,3 +363,19 @@
 (define-read-only (get-retirement-status (credit-id uint))
   (map-get? credit-retirement-status { credit-id: credit-id })
 )
+
+(define-public (update-credit-price (credit-id uint) (new-price uint))
+  (let
+    ((credit (unwrap! (map-get? carbon-credits { credit-id: credit-id }) ERR_NOT_FOUND)))
+    (begin
+      (asserts! (is-eq tx-sender (get creator credit)) ERR_NOT_AUTHORIZED)
+      (asserts! (not (get for-sale credit)) ERR_NOT_AUTHORIZED)
+      (asserts! (> new-price u0) ERR_INVALID_PRICE)
+      (map-set carbon-credits
+        { credit-id: credit-id }
+        (merge credit { price: new-price })
+      )
+      (ok true)
+    )
+  )
+)
