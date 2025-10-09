@@ -13,6 +13,7 @@
 (define-data-var credit-id-nonce uint u0)
 (define-data-var project-id-nonce uint u0)
 (define-data-var retirement-id-nonce uint u0)
+(define-data-var transfer-id-nonce uint u0)
 
 (define-map projects
   { project-id: uint }
@@ -80,9 +81,20 @@
 
 (define-map credit-retirement-status
   { credit-id: uint }
-  { 
+  {
     retired: bool,
     retirement-id: (optional uint)
+  }
+)
+
+(define-map transfer-memos
+  { transfer-id: uint }
+  {
+    credit-id: uint,
+    from: principal,
+    to: principal,
+    memo: (string-ascii 100),
+    at: uint
   }
 )
 
@@ -365,17 +377,46 @@
 )
 
 (define-public (update-credit-price (credit-id uint) (new-price uint))
+   (let
+     ((credit (unwrap! (map-get? carbon-credits { credit-id: credit-id }) ERR_NOT_FOUND)))
+     (begin
+       (asserts! (is-eq tx-sender (get creator credit)) ERR_NOT_AUTHORIZED)
+       (asserts! (not (get for-sale credit)) ERR_NOT_AUTHORIZED)
+       (asserts! (> new-price u0) ERR_INVALID_PRICE)
+       (map-set carbon-credits
+         { credit-id: credit-id }
+         (merge credit { price: new-price })
+       )
+       (ok true)
+     )
+   )
+ )
+
+
+(define-public (transfer-credit-with-memo (credit-id uint) (recipient principal) (memo (string-ascii 100)))
   (let
-    ((credit (unwrap! (map-get? carbon-credits { credit-id: credit-id }) ERR_NOT_FOUND)))
+    ((retirement-status (unwrap! (map-get? credit-retirement-status { credit-id: credit-id }) ERR_NOT_FOUND))
+     (transfer-id (+ (var-get transfer-id-nonce) u1)))
     (begin
-      (asserts! (is-eq tx-sender (get creator credit)) ERR_NOT_AUTHORIZED)
-      (asserts! (not (get for-sale credit)) ERR_NOT_AUTHORIZED)
-      (asserts! (> new-price u0) ERR_INVALID_PRICE)
-      (map-set carbon-credits
-        { credit-id: credit-id }
-        (merge credit { price: new-price })
+      (asserts! (is-eq tx-sender (unwrap! (nft-get-owner? carbon-credit credit-id) ERR_NOT_FOUND)) ERR_NOT_AUTHORIZED)
+      (asserts! (not (get retired retirement-status)) ERR_ALREADY_RETIRED)
+      (var-set transfer-id-nonce transfer-id)
+      (try! (nft-transfer? carbon-credit credit-id tx-sender recipient))
+      (map-set transfer-memos
+        { transfer-id: transfer-id }
+        {
+          credit-id: credit-id,
+          from: tx-sender,
+          to: recipient,
+          memo: memo,
+          at: stacks-block-height
+        }
       )
-      (ok true)
+      (ok transfer-id)
     )
   )
+)
+
+(define-read-only (get-transfer-memo (transfer-id uint))
+  (map-get? transfer-memos { transfer-id: transfer-id })
 )
