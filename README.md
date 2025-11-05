@@ -24,6 +24,7 @@ A Clarity-based carbon credit platform where individuals and organizations can:
 - **Marketplace**: Trade verified credits with transparent pricing
 - **Transfer with Memo**: Attach custom memos to credit transfers for enhanced traceability
 - **Retirement System**: Permanently retire credits to claim environmental benefits
+- **Donation Feature**: Donate verified carbon credits to environmental causes, permanently removing them from circulation
 
 ### 👨‍🔬 Auditor System
 - **Registration**: Contract owner registers trusted auditors
@@ -44,6 +45,7 @@ A Clarity-based carbon credit platform where individuals and organizations can:
 3. **Own the NFT**: Carbon credit transferred to your wallet
 4. **Transfer credits**: `(transfer-credit-with-memo credit-id recipient "Gift to NGO")`
 5. **Retire credits**: `(retire-carbon-credit credit-id "Corporate carbon neutrality")`
+6. **Donate credits**: `(donate-carbon-credit credit-id "Support reforestation efforts")`
 
 ### For Community Members
 1. **Vote on projects**: `(vote-on-project project-id true)`
@@ -67,6 +69,7 @@ A Clarity-based carbon credit platform where individuals and organizations can:
 - `buy-carbon-credit` - Purchase carbon credit
 - `transfer-credit-with-memo` - Transfer credit with attached memo
 - `retire-carbon-credit` - Permanently retire credit for environmental benefit
+- `donate-carbon-credit` - Donate credit to environmental causes, permanently removing from circulation
 
 ### Read-Only Functions
 - `get-project` - Get project details
@@ -79,6 +82,7 @@ A Clarity-based carbon credit platform where individuals and organizations can:
 - `is-credit-retired` - Check if credit is retired
 - `get-retirement-status` - Get retirement status
 - `get-transfer-memo` - Retrieve transfer memo details
+- `get-donation-details` - Retrieve donation details
 
 ## 💰 Economic Model
 - **Project Escrow**: 1 STX per project (released on completion)
@@ -91,6 +95,7 @@ A Clarity-based carbon credit platform where individuals and organizations can:
 - **DAO Governance**: Community approval for all projects
 - **Escrow Protection**: Funds released only after verification
 - **Retirement Prevention**: Retired credits cannot be traded or re-sold
+- **Donation Integrity**: Donated credits are permanently removed from circulation, ensuring genuine environmental commitment
 
 ## 🏃‍♂️ Getting Started
 

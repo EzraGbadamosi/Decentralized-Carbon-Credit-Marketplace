@@ -98,6 +98,19 @@
   }
 )
 
+(define-map credit-donations
+  { donation-id: uint }
+  {
+    credit-id: uint,
+    donor: principal,
+    carbon-amount: uint,
+    donation-reason: (string-ascii 100),
+    donated-at: uint
+  }
+)
+
+(define-data-var donation-id-nonce uint u0)
+
 (define-public (register-auditor (auditor principal))
   (begin
     (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_NOT_AUTHORIZED)
@@ -419,4 +432,44 @@
 
 (define-read-only (get-transfer-memo (transfer-id uint))
   (map-get? transfer-memos { transfer-id: transfer-id })
+)
+
+(define-public (donate-carbon-credit (credit-id uint) (donation-reason (string-ascii 100)))
+  (let
+    ((credit (unwrap! (map-get? carbon-credits { credit-id: credit-id }) ERR_NOT_FOUND))
+     (retirement-status (unwrap! (map-get? credit-retirement-status { credit-id: credit-id }) ERR_NOT_FOUND))
+     (owner (unwrap! (nft-get-owner? carbon-credit credit-id) ERR_NOT_FOUND))
+     (donation-id (+ (var-get donation-id-nonce) u1)))
+    (begin
+      (asserts! (is-eq tx-sender owner) ERR_NOT_AUTHORIZED)
+      (asserts! (get verified credit) ERR_NOT_VERIFIED)
+      (asserts! (not (get retired retirement-status)) ERR_ALREADY_RETIRED)
+      (var-set donation-id-nonce donation-id)
+      (try! (nft-burn? carbon-credit credit-id owner))
+      (map-set credit-donations
+        { donation-id: donation-id }
+        {
+          credit-id: credit-id,
+          donor: tx-sender,
+          carbon-amount: (get carbon-amount credit),
+          donation-reason: donation-reason,
+          donated-at: stacks-block-height
+        }
+      )
+      (map-set credit-retirement-status
+        { credit-id: credit-id }
+        { retired: true, retirement-id: none }
+      )
+      (map-set carbon-credits
+        { credit-id: credit-id }
+        (merge credit { for-sale: false })
+      )
+      (map-delete marketplace-listings { credit-id: credit-id })
+      (ok donation-id)
+    )
+  )
+)
+
+(define-read-only (get-donation-details (donation-id uint))
+  (map-get? credit-donations { donation-id: donation-id })
 )
