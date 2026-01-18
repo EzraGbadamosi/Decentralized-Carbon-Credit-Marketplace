@@ -15,6 +15,7 @@ A Clarity-based carbon credit platform where individuals and organizations can:
 
 ### 🏗️ Project Management
 - **Create Projects**: Submit carbon offset projects for community approval
+- **Update Project Details**: Modify project name, description, or carbon amount before approval
 - **DAO Voting**: Community votes on project viability (minimum 3 yes votes required)
 - **Escrow System**: Funds held in smart contract until project completion
 
@@ -35,9 +36,10 @@ A Clarity-based carbon credit platform where individuals and organizations can:
 
 ### For Project Creators
 1. **Create a project**: `(create-project "Solar Farm" "100MW solar installation" u50000)`
-2. **Wait for DAO approval**: Community votes on your project
-3. **Mint carbon credits**: `(mint-carbon-credit project-id u1000 u500)`
-4. **List for sale**: `(list-credit-for-sale credit-id u500)`
+2. **Update project details** (optional): `(update-project-details project-id "Updated Solar Farm" "Updated description" u60000)`
+3. **Wait for DAO approval**: Community votes on your project
+4. **Mint carbon credits**: `(mint-carbon-credit project-id u1000 u500)`
+5. **List for sale**: `(list-credit-for-sale credit-id u500)`
 
 ### For Buyers
 1. **Browse marketplace**: Check available verified credits
@@ -60,6 +62,7 @@ A Clarity-based carbon credit platform where individuals and organizations can:
 
 ### Public Functions
 - `create-project` - Submit new carbon offset project
+- `update-project-details` - Modify project details before approval
 - `vote-on-project` - Vote on project approval
 - `deposit-escrow` - Deposit funds for approved project
 - `mint-carbon-credit` - Create carbon credit NFT

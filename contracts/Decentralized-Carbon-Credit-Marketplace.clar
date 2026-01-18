@@ -145,6 +145,22 @@
   )
 )
 
+(define-public (update-project-details (project-id uint) (name (string-ascii 50)) (description (string-ascii 200)) (carbon-amount uint))
+  (let
+    ((project (unwrap! (map-get? projects { project-id: project-id }) ERR_NOT_FOUND)))
+    (begin
+      (asserts! (is-eq tx-sender (get creator project)) ERR_NOT_AUTHORIZED)
+      (asserts! (not (get approved project)) ERR_NOT_AUTHORIZED)
+      (asserts! (> carbon-amount u0) ERR_INVALID_AMOUNT)
+      (map-set projects
+        { project-id: project-id }
+        (merge project { name: name, description: description, carbon-amount: carbon-amount })
+      )
+      (ok true)
+    )
+  )
+)
+
 (define-public (vote-on-project (project-id uint) (vote bool))
   (let
     ((existing-vote (map-get? project-votes { project-id: project-id, voter: tx-sender }))
